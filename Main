@@ -1,0 +1,82 @@
+Private Declare Sub keybd_event Lib "user32" (ByVal bVk As Byte, ByVal _
+  bScan As Byte, ByVal dwFlags As Long, ByVal dwExtraInfo As Long)
+
+Private Const KEYEVENTF_KEYUP = &H2
+Private Const VK_SNAPSHOT = &H2C
+Private Const VK_MENU = &H12
+Declare Function apiShowWindow Lib "user32" Alias "ShowWindow" _
+            (ByVal hwnd As Long, ByVal nCmdShow As Long) As Long
+
+Global Const SW_MAXIMIZE = 3
+Global Const SW_SHOWNORMAL = 1
+Global Const SW_SHOWMINIMIZED = 2
+
+Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
+
+Sub searches()
+
+    On Error Resume Next
+
+    Application.ScreenUpdating = False
+
+    Dim StartTime As Double
+    Dim SecondsElapsed As Double
+
+    Dim searchString As String
+    Dim IE As Object
+    Dim objElement As Object
+    Dim objCollection As Object
+    Dim ws As Worksheet
+    Dim i As Integer
+    Dim numRows As Integer
+
+    Module2.resetWorkbook
+
+    numRows = Sheet1.Cells(Sheet1.Cells.Rows.Count, 1).End(xlUp).Row
+
+    StartTime = Timer
+
+    Set IE = CreateObject("InternetExplorer.Application")
+
+    For i = 1 To numRows
+        
+      'store address in string and create new sheet
+        searchString = Sheet1.Range("A" & i).Value2
+
+        Set ws = ThisWorkbook.Sheets.Add(After:= _
+                 ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
+        ws.Name = "a" & i
+
+      'perform a google search with Internet explorer
+        IE.Navigate "https://www.google.co.in/search?q=" & searchString
+       
+      'open the browser window
+        If i = 1 Then
+            IE.Visible = True
+            IE.Visible = 1
+            apiShowWindow IE.hwnd, SW_MAXIMIZE
+        End If
+
+        Do While IE.busy = True Or IE.readyState <> 4: DoEvents: Loop
+      
+      'take a screenshot
+        Application.SendKeys "(%{1068})"
+
+      'wait 1 second to give the screenshot API sufficient time
+        Sleep 1000
+
+      'paste the screenshot in Excel
+        ThisWorkbook.Sheets("a" & i).Paste Destination:=ThisWorkbook.Sheets("a" & i).Range("A1"), link:=False
+
+    Next i
+
+    IE.Quit
+    Set IE = Nothing
+    Application.ScreenUpdating = True
+
+    SecondsElapsed = Round(Timer - StartTime, 2)
+    MsgBox "This code ran successfully in " & SecondsElapsed & " seconds", vbInformation
+
+
+
+End Sub
